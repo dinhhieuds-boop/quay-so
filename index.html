@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quay số</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <h1>🎡 Quay số</h1>
+
+    <section class="board">
+      <div class="pointer" aria-hidden="true"></div>
+      <canvas id="wheel" width="520" height="520"></canvas>
+    </section>
+
+    <section class="panel">
+      <div class="row">
+        <label>Danh sách (mỗi dòng 1 mục):</label>
+        <textarea id="items" rows="8"></textarea>
+      </div>
+
+      <div class="row grid">
+        <button id="spin">QUAY</button>
+        <button id="shuffle" class="ghost">Trộn</button>
+        <button id="reset" class="ghost">Reset</button>
+      </div>
+
+      <p class="result">Kết quả: <strong id="result">—</strong></p>
+      <p class="note">Mẹo: nhập “A, B, C…” mỗi dòng 1 mục. Wheel tự vẽ lại theo danh sách.</p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
