@@ -382,7 +382,7 @@ function stopFireworks() {
     window.addEventListener("resize", () => {
       // nếu popup đang mở thì resize canvas cho khớp
       const isOpen = document.getElementById("modalCongrats")?.getAttribute("aria-hidden") === "false";
-      if (isOpen) fwResize();
+      if (isOpen) fxResize();
     });
   }
 
