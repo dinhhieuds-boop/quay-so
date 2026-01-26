@@ -333,4 +333,17 @@ body{
 .tbl tbody td:nth-child(1),
 .tbl tbody td:nth-child(3){
   font-variant-numeric: tabular-nums;
+}/* ===== FIX: Popup không bị canvas che chữ ===== */
+.congratsCard{ position:relative; }
+.fwCanvas{ z-index:1; }
+.congratsCard .modalHead,
+.congratsCard .modalBody,
+.congratsCard .modalFoot{
+  position:relative;
+  z-index:2;
 }
+
+/* Căn giữa nội dung popup */
+.congratsCard .modalBody{ text-align:center; }
+.winName{ font-size:34px; font-weight:900; margin:6px 0; }
+.winCode{ font-size:16px; font-weight:800; opacity:.92; margin-bottom:6px; }
