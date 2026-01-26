@@ -355,3 +355,51 @@ body{
   color:rgba(246,221,147,.98);
   text-shadow:0 10px 22px rgba(0,0,0,.20);
 }
+/* ===== Popup Congrats: căn giữa + chữ to + bỏ hint ===== */
+.congratsCard .modalHead{
+  justify-content:center;            /* tiêu đề ở giữa */
+  text-align:center;
+}
+
+.congratsCard .modalTitle{
+  font-size:44px;                    /* to hơn */
+  font-weight:900;
+  letter-spacing:.5px;
+  text-shadow:0 12px 28px rgba(0,0,0,.25);
+}
+
+/* Ẩn nút X nếu bạn muốn giống ảnh (tuỳ chọn)
+.congratsCard .xBtn{ display:none; }
+*/
+
+.congratsCard .modalBody{
+  text-align:center;
+  padding-top:10px;
+}
+
+.winName{
+  font-size:24px;
+  font-weight:800;
+  margin:6px 0 2px;
+}
+
+.winCode{
+  font-size:20px;
+  font-weight:900;
+  opacity:.95;
+  margin:0 0 14px;
+}
+
+/* giữ popup "lớn" */
+.congratsCard{
+  width:min(860px, 92vw);
+}
+
+/* confetti canvas luôn nằm trên nền mờ, không che chữ */
+.fwCanvas{ z-index:1; opacity:.95; }
+.congratsCard .modalHead,
+.congratsCard .modalBody,
+.congratsCard .modalFoot{
+  position:relative;
+  z-index:2;
+}
