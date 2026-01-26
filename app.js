@@ -48,4 +48,206 @@ document.addEventListener("click", (e) => {
 
 function parseEmployees(text){
   // mỗi dòng: Tên | Mã
-  const lines = text.spli
+  const lines = text.split("\n").map(s => s.trim()).filter(Boolean);
+  const out = [];
+  for(const line of lines){
+    const parts = line.split("|").map(s => s.trim());
+    if(parts.length >= 2){
+      out.push({ name: parts[0], code: parts[1] });
+    } else {
+      // nếu người dùng chỉ nhập 1 cột => tự tạo mã
+      out.push({ name: parts[0], code: "NV" + String(out.length+1).padStart(3,"0") });
+    }
+  }
+  // lọc trùng theo mã (ưu tiên cái đầu)
+  const seen = new Set();
+  return out.filter(x => {
+    const k = x.code || x.name;
+    if(seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+function saveAll(){
+  localStorage.setItem(LS_EMP, JSON.stringify(employees));
+  localStorage.setItem(LS_WIN, JSON.stringify(winners));
+  localStorage.setItem(LS_REMAIN, JSON.stringify(remaining));
+}
+
+function loadAll(){
+  employees = JSON.parse(localStorage.getItem(LS_EMP) || "[]");
+  winners = JSON.parse(localStorage.getItem(LS_WIN) || "[]");
+  remaining = JSON.parse(localStorage.getItem(LS_REMAIN) || "[]");
+
+  // nếu có employees mà remaining rỗng => rebuild remaining trừ winners
+  if(employees.length && !remaining.length){
+    const winCodes = new Set(winners.map(w=>w.code));
+    remaining = employees.filter(e => !winCodes.has(e.code));
+  }
+
+  if(!employees.length){
+    employees = sampleEmployees();
+    remaining = [...employees];
+    winners = [];
+  }
+  employeeInput.value = employees.map(e => `${e.name} | ${e.code}`).join("\n");
+  saveAll();
+}
+
+function sampleEmployees(){
+  return [
+    {name:"Nguyễn Văn A", code:"NV001"},
+    {name:"Trần Thị B", code:"NV002"},
+    {name:"Lê Văn C", code:"NV003"},
+    {name:"Phạm Thị D", code:"NV004"},
+    {name:"Hoàng Văn E", code:"NV005"},
+    {name:"Vũ Thị F", code:"NV006"},
+    {name:"Đỗ Văn G", code:"NV007"},
+    {name:"Ngô Thị H", code:"NV008"},
+  ];
+}
+
+function renderWinners(){
+  winnerTbody.innerHTML = "";
+  if(!winners.length){
+    winnerTbody.innerHTML = `<tr class="emptyRow"><td colspan="3">Chưa có kết quả</td></tr>`;
+    return;
+  }
+  winners.forEach((w, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx+1}</td>
+      <td>${escapeHtml(w.name)}</td>
+      <td>${escapeHtml(w.code)}</td>
+    `;
+    winnerTbody.appendChild(tr);
+  });
+}
+
+function renderEmployees(){
+  empCount.textContent = employees.length;
+  empRemain.textContent = remaining.length;
+
+  empTbody.innerHTML = "";
+  if(!employees.length){
+    empTbody.innerHTML = `<tr class="emptyRow"><td colspan="3">Chưa có dữ liệu</td></tr>`;
+    return;
+  }
+  employees.forEach((e, idx) => {
+    const tr = document.createElement("tr");
+    const isRemain = remaining.some(r => r.code === e.code);
+    tr.innerHTML = `
+      <td>${idx+1}</td>
+      <td>${escapeHtml(e.name)} ${isRemain ? "" : `<span style="color:#6b7a90;font-weight:700;">(đã trúng)</span>`}</td>
+      <td>${escapeHtml(e.code)}</td>
+    `;
+    empTbody.appendChild(tr);
+  });
+}
+
+function escapeHtml(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+async function spin(){
+  if(spinning) return;
+  if(!remaining.length){
+    rolling.textContent = "Hết danh sách để quay";
+    return;
+  }
+  spinning = true;
+  btnSpin.disabled = true;
+  btnClear.disabled = true;
+  btnList.disabled = true;
+
+  // hiệu ứng chạy chữ 2.6s
+  const duration = 2600;
+  const start = performance.now();
+
+  while(performance.now() - start < duration){
+    const r = remaining[Math.floor(Math.random()*remaining.length)];
+    rolling.textContent = `${r.name} (${r.code})`;
+    await sleep(70);
+  }
+
+  // chốt người trúng (không trùng)
+  const winnerIndex = Math.floor(Math.random()*remaining.length);
+  const winner = remaining.splice(winnerIndex, 1)[0];
+  winners.push(winner);
+
+  rolling.textContent = `${winner.name} (${winner.code})`;
+  winnerBig.textContent = winner.name;
+  winnerSub.textContent = `Mã nhân viên: ${winner.code}`;
+
+  saveAll();
+  renderWinners();
+  renderEmployees();
+
+  openModal("congrats");
+
+  spinning = false;
+  btnSpin.disabled = false;
+  btnClear.disabled = false;
+  btnList.disabled = false;
+}
+
+function clearRolling(){
+  rolling.textContent = "—";
+}
+
+btnSpin.addEventListener("click", spin);
+btnClear.addEventListener("click", clearRolling);
+
+btnList.addEventListener("click", () => {
+  renderEmployees();
+  openModal("employees");
+});
+
+btnLoadSample.addEventListener("click", () => {
+  const s = sampleEmployees();
+  employeeInput.value = s.map(e => `${e.name} | ${e.code}`).join("\n");
+});
+
+btnSaveEmployees.addEventListener("click", () => {
+  const parsed = parseEmployees(employeeInput.value);
+  employees = parsed;
+  winners = [];
+  remaining = [...employees];
+  saveAll();
+  renderWinners();
+  renderEmployees();
+  rolling.textContent = "—";
+});
+
+btnResetWinners.addEventListener("click", () => {
+  winners = [];
+  remaining = [...employees];
+  saveAll();
+  renderWinners();
+  renderEmployees();
+  rolling.textContent = "—";
+});
+
+btnResetAll.addEventListener("click", () => {
+  localStorage.removeItem(LS_EMP);
+  localStorage.removeItem(LS_WIN);
+  localStorage.removeItem(LS_REMAIN);
+  loadAll();
+  renderWinners();
+  renderEmployees();
+  rolling.textContent = "—";
+});
+
+// init
+loadAll();
+renderWinners();
+renderEmployees();
+clearRolling();
