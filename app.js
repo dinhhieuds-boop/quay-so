@@ -1,15 +1,7 @@
-/* =========================
-   QUAY SỐ MAY MẮN - app.js (FIX)
-   - Đợi DOMContentLoaded
-   - Bắt nút theo nhiều id fallback
-   - Event delegation để chắc chắn click hoạt động
-   - Lưu localStorage
-   ========================= */
-
 (() => {
-  const LS_EMP = "qs_employees_v2";
-  const LS_WIN = "qs_winners_v2";
-  const LS_REMAIN = "qs_remaining_v2";
+  const LS_EMP = "qs_employees_v3";
+  const LS_WIN = "qs_winners_v3";
+  const LS_REMAIN = "qs_remaining_v3";
 
   let employees = [];
   let winners = [];
@@ -28,6 +20,7 @@
   }
 
   function sampleEmployees() {
+    // danh sách mẫu hiện tại (bạn có thể dán 32 người ở đây)
     return [
       { name: "Nguyễn Thị Thu Nga", code: "3000014762" },
       { name: "Nguyễn Thị Thanh Huyền", code: "3000029493" },
@@ -99,15 +92,13 @@
   }
 
   function randomizeSlotsOnce() {
-    const slots = getSlots();
-    for (const s of slots) s.textContent = String(Math.floor(Math.random() * 10));
+    for (const s of getSlots()) s.textContent = String(Math.floor(Math.random() * 10));
   }
 
   function showWinnerOnSlots(w) {
-    const slots = getSlots();
     const code = String(w?.code ?? "");
     const chars = code.padEnd(10, "*").slice(0, 10).split("");
-    slots.forEach((s, i) => (s.textContent = chars[i] ?? "?"));
+    getSlots().forEach((s, i) => (s.textContent = chars[i] ?? "?"));
   }
 
   function renderWinners() {
@@ -153,26 +144,158 @@
     });
   }
 
+  // ===== Modals =====
+  function openModal(id) {
+    document.getElementById(id)?.setAttribute("aria-hidden", "false");
+  }
+  function closeModal(id) {
+    document.getElementById(id)?.setAttribute("aria-hidden", "true");
+  }
+
   function openEmployeesModal() {
-    const modal = document.getElementById("modalEmployees");
     const ta = document.getElementById("employeeInput");
     if (ta) ta.value = employees.map((e) => `${e.name} | ${e.code}`).join("\n");
-    modal?.setAttribute("aria-hidden", "false");
+    openModal("modalEmployees");
   }
 
-  function closeEmployeesModal() {
-    document.getElementById("modalEmployees")?.setAttribute("aria-hidden", "true");
+  function showCongrats(winner) {
+    const nameEl = document.getElementById("winName");
+    const codeEl = document.getElementById("winCode");
+    if (nameEl) nameEl.textContent = winner.name;
+    if (codeEl) codeEl.textContent = `Mã nhân viên: ${winner.code}`;
+
+    openModal("modalCongrats");
+    startFireworks(); // pháo hoa
   }
 
-  function sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
+  // ===== Fireworks (canvas) =====
+  const fw = {
+    canvas: null,
+    ctx: null,
+    w: 0,
+    h: 0,
+    particles: [],
+    running: false,
+    stopAt: 0,
+    raf: 0,
+  };
+
+  function fwResize() {
+    const canvas = document.getElementById("fw");
+    if (!canvas) return;
+    fw.canvas = canvas;
+    fw.ctx = canvas.getContext("2d");
+
+    // Set size theo card hiện tại
+    const card = canvas.closest(".modalCard") || canvas.parentElement;
+    const rect = card.getBoundingClientRect();
+    fw.w = Math.max(300, Math.floor(rect.width));
+    fw.h = Math.max(240, Math.floor(rect.height));
+    canvas.width = fw.w * devicePixelRatio;
+    canvas.height = fw.h * devicePixelRatio;
+    canvas.style.width = fw.w + "px";
+    canvas.style.height = fw.h + "px";
+    fw.ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  }
+
+  function fwBurst(x, y) {
+    const count = 70;
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = 2 + Math.random() * 5.5;
+      fw.particles.push({
+        x, y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp,
+        life: 60 + Math.random() * 30,
+        r: 2 + Math.random() * 2,
+        // màu vàng / trắng / cam
+        c: Math.random() < 0.5 ? "rgba(246,221,147,0.95)" :
+           Math.random() < 0.7 ? "rgba(255,255,255,0.92)" :
+                                 "rgba(238,201,111,0.92)"
+      });
+    }
+  }
+
+  function fwStep() {
+    if (!fw.running) return;
+
+    const ctx = fw.ctx;
+    if (!ctx) return;
+
+    // fade nhẹ để tạo vệt
+    ctx.fillStyle = "rgba(0,0,0,0.14)";
+    ctx.fillRect(0, 0, fw.w, fw.h);
+
+    // update particles
+    for (let i = fw.particles.length - 1; i >= 0; i--) {
+      const p = fw.particles[i];
+      p.vy += 0.08; // gravity
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= 1;
+
+      ctx.beginPath();
+      ctx.fillStyle = p.c;
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (p.life <= 0 || p.y > fw.h + 20 || p.x < -20 || p.x > fw.w + 20) {
+        fw.particles.splice(i, 1);
+      }
+    }
+
+    // thỉnh thoảng nổ thêm
+    if (Math.random() < 0.10) {
+      fwBurst(60 + Math.random() * (fw.w - 120), 80 + Math.random() * 120);
+    }
+
+    // auto stop
+    if (Date.now() > fw.stopAt && fw.particles.length === 0) {
+      stopFireworks();
+      return;
+    }
+
+    fw.raf = requestAnimationFrame(fwStep);
+  }
+
+  function startFireworks() {
+    fwResize();
+    fw.particles = [];
+    fw.running = true;
+    fw.stopAt = Date.now() + 1800; // chạy ~1.8s
+    // nổ đầu tiên 2 phát
+    fwBurst(fw.w * 0.30, fw.h * 0.35);
+    fwBurst(fw.w * 0.70, fw.h * 0.35);
+
+    cancelAnimationFrame(fw.raf);
+    fw.raf = requestAnimationFrame(fwStep);
+  }
+
+  function stopFireworks() {
+    fw.running = false;
+    cancelAnimationFrame(fw.raf);
+    // clear canvas
+    if (fw.ctx) {
+      fw.ctx.clearRect(0, 0, fw.w, fw.h);
+    }
+  }
+
+  // ===== Spin =====
+  function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+  function disableButtons(disabled) {
+    ["btnSpin", "btnClear", "btnList"].forEach((id) => {
+      const b = document.getElementById(id);
+      if (b) b.disabled = disabled;
+    });
   }
 
   async function spin() {
     if (spinning) return;
 
     if (!remaining.length) {
-      const msg = ["H", "Ế", "T", " ", "L", "I", "S", "T", "!", "!"];
+      const msg = ["H","Ế","T"," ","L","I","S","T","!","!"];
       getSlots().forEach((s, i) => (s.textContent = msg[i] || "!"));
       return;
     }
@@ -197,22 +320,23 @@
     renderWinners();
     saveAll();
 
-    disableButtons(false);
     spinning = false;
+    disableButtons(false);
+
+    // popup + pháo hoa
+    showCongrats(winner);
   }
 
-  function disableButtons(disabled) {
-    // fallback: nếu bạn đổi id thì vẫn bắt được nhờ query
-    const btns = [
-      document.getElementById("btnSpin") || document.getElementById("spin"),
-      document.getElementById("btnClear") || document.getElementById("clear"),
-      document.getElementById("btnList") || document.getElementById("list"),
-    ].filter(Boolean);
-    btns.forEach((b) => (b.disabled = disabled));
-  }
-
-  function clearSlots() {
+  // ===== Reset all (nút Clear -> XÓA TẤT CẢ) =====
+  function resetAllData() {
     if (spinning) return;
+    localStorage.removeItem(LS_WIN);
+    localStorage.removeItem(LS_REMAIN);
+    // giữ danh sách nhân viên hiện tại (employees) để khỏi mất
+    winners = [];
+    remaining = [...employees];
+    saveAll();
+    renderWinners();
     resetSlots();
   }
 
@@ -225,7 +349,7 @@
     saveAll();
     renderWinners();
     resetSlots();
-    closeEmployeesModal();
+    closeModal("modalEmployees");
   }
 
   function loadSampleToTextarea() {
@@ -234,50 +358,26 @@
     if (ta) ta.value = s.map((e) => `${e.name} | ${e.code}`).join("\n");
   }
 
-  // Event delegation: click ở đâu cũng bắt được
+  // ===== Click handler (delegation cho chắc ăn) =====
   function setupClicks() {
     document.addEventListener("click", (e) => {
       const t = e.target;
 
-      // Nút quay
-      if (t?.id === "btnSpin" || t?.id === "spin") {
-        e.preventDefault();
-        spin();
-        return;
-      }
+      if (t?.id === "btnSpin") { e.preventDefault(); spin(); return; }
+      if (t?.id === "btnClear") { e.preventDefault(); resetAllData(); return; }
+      if (t?.id === "btnList") { e.preventDefault(); openEmployeesModal(); return; }
 
-      // Nút clear
-      if (t?.id === "btnClear" || t?.id === "clear") {
-        e.preventDefault();
-        clearSlots();
-        return;
-      }
+      if (t?.id === "btnLoadSample") { e.preventDefault(); loadSampleToTextarea(); return; }
+      if (t?.id === "btnSaveEmployees") { e.preventDefault(); saveEmployeesFromTextarea(); return; }
 
-      // Nút danh sách
-      if (t?.id === "btnList" || t?.id === "list") {
-        e.preventDefault();
-        openEmployeesModal();
-        return;
-      }
+      if (t?.dataset?.close === "employees") { e.preventDefault(); closeModal("modalEmployees"); return; }
+      if (t?.dataset?.close === "congrats") { e.preventDefault(); stopFireworks(); closeModal("modalCongrats"); return; }
+    });
 
-      // Modal close
-      if (t?.dataset?.close === "employees") {
-        e.preventDefault();
-        closeEmployeesModal();
-        return;
-      }
-
-      // Nạp mẫu / lưu danh sách
-      if (t?.id === "btnLoadSample") {
-        e.preventDefault();
-        loadSampleToTextarea();
-        return;
-      }
-      if (t?.id === "btnSaveEmployees") {
-        e.preventDefault();
-        saveEmployeesFromTextarea();
-        return;
-      }
+    window.addEventListener("resize", () => {
+      // nếu popup đang mở thì resize canvas cho khớp
+      const isOpen = document.getElementById("modalCongrats")?.getAttribute("aria-hidden") === "false";
+      if (isOpen) fwResize();
     });
   }
 
@@ -288,6 +388,5 @@
     setupClicks();
   }
 
-  // Đợi DOM: tránh trường hợp JS chạy trước khi có nút
   window.addEventListener("DOMContentLoaded", init);
 })();
