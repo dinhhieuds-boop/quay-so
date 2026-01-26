@@ -20,7 +20,6 @@
   }
 
   function sampleEmployees() {
-    // danh sách mẫu hiện tại (bạn có thể dán 32 người ở đây)
     return [
       { name: "Nguyễn Thị Thu Nga", code: "3000014762" },
       { name: "Nguyễn Thị Thanh Huyền", code: "3000029493" },
@@ -162,132 +161,20 @@
     const nameEl = document.getElementById("winName");
     const codeEl = document.getElementById("winCode");
     if (nameEl) nameEl.textContent = winner.name;
-    if (codeEl) codeEl.textContent = winner.code;
+    if (codeEl) codeEl.textContent = winner.code; // chỉ hiện số mã
 
     openModal("modalCongrats");
-    startFireworks(); // pháo hoa
-  }
 
- // ===== Confetti đơn giản (canvas) =====
-const fx = {
-  canvas: null,
-  ctx: null,
-  w: 0,
-  h: 0,
-  pieces: [],
-  running: false,
-  raf: 0,
-  stopAt: 0,
-};
-
-function fxResize() {
-  const canvas = document.getElementById("fw");
-  if (!canvas) return;
-  fx.canvas = canvas;
-  fx.ctx = canvas.getContext("2d");
-
-  const card = canvas.closest(".modalCard") || canvas.parentElement;
-  const rect = card.getBoundingClientRect();
-
-  fx.w = Math.max(320, Math.floor(rect.width));
-  fx.h = Math.max(240, Math.floor(rect.height));
-
-  canvas.width = fx.w * devicePixelRatio;
-  canvas.height = fx.h * devicePixelRatio;
-  canvas.style.width = fx.w + "px";
-  canvas.style.height = fx.h + "px";
-  fx.ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-}
-
-function spawnConfettiBurst() {
-  const colors = ["#f6dd93", "#ffffff", "#eec96f", "#7fe3ff", "#a7ff7f", "#ff7fbf", "#b67fff"];
-  const count = 160;
-
-  for (let i = 0; i < count; i++) {
-    const size = 6 + Math.random() * 8;
-    fx.pieces.push({
-      x: Math.random() * fx.w,
-      y: -20 - Math.random() * 200,
-      w: size,
-      h: size * (0.6 + Math.random()),
-      vx: -1.2 + Math.random() * 2.4,
-      vy: 1.2 + Math.random() * 2.8,
-      rot: Math.random() * Math.PI,
-      vr: -0.12 + Math.random() * 0.24,
-      life: 220 + Math.random() * 80,
-      c: colors[Math.floor(Math.random() * colors.length)],
-      shape: Math.random() < 0.5 ? "rect" : "dot",
+    // CHỜ modal render xong -> canvas có size thật
+    requestAnimationFrame(() => {
+      window.startFireworks?.();
     });
   }
-}
-
-function fxStep() {
-  if (!fx.running) return;
-  const ctx = fx.ctx;
-  if (!ctx) return;
-
-  // clear trong suốt (không làm nền bị đen như fireworks)
-  ctx.clearRect(0, 0, fx.w, fx.h);
-
-  for (let i = fx.pieces.length - 1; i >= 0; i--) {
-    const p = fx.pieces[i];
-
-    // physics
-    p.vy += 0.01; // gravity nhẹ
-    p.x += p.vx;
-    p.y += p.vy;
-    p.rot += p.vr;
-    p.life -= 1;
-
-    // draw
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.rot);
-    ctx.fillStyle = p.c;
-
-    if (p.shape === "dot") {
-      ctx.beginPath();
-      ctx.arc(0, 0, p.w * 0.35, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-    }
-    ctx.restore();
-
-    // remove
-    if (p.life <= 0 || p.y > fx.h + 40 || p.x < -50 || p.x > fx.w + 50) {
-      fx.pieces.splice(i, 1);
-    }
-  }
-
-  if (Date.now() > fx.stopAt && fx.pieces.length === 0) {
-    stopFireworks(); // dùng lại tên hàm để khỏi sửa nhiều chỗ
-    return;
-  }
-
-  fx.raf = requestAnimationFrame(fxStep);
-}
-
-// giữ tên hàm để code cũ không phải sửa
-function startFireworks() {
-  fxResize();
-  fx.pieces = [];
-  fx.running = true;
-  fx.stopAt = Date.now() + 2200; // confetti chạy ~2.2s
-  spawnConfettiBurst();
-
-  cancelAnimationFrame(fx.raf);
-  fx.raf = requestAnimationFrame(fxStep);
-}
-
-function stopFireworks() {
-  fx.running = false;
-  cancelAnimationFrame(fx.raf);
-  if (fx.ctx) fx.ctx.clearRect(0, 0, fx.w, fx.h);
-}
 
   // ===== Spin =====
-  function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+  function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
 
   function disableButtons(disabled) {
     ["btnSpin", "btnClear", "btnList"].forEach((id) => {
@@ -300,7 +187,7 @@ function stopFireworks() {
     if (spinning) return;
 
     if (!remaining.length) {
-      const msg = ["H","Ế","T"," ","L","I","S","T","!","!"];
+      const msg = ["H", "Ế", "T", " ", "L", "I", "S", "T", "!", "!"];
       getSlots().forEach((s, i) => (s.textContent = msg[i] || "!"));
       return;
     }
@@ -328,16 +215,14 @@ function stopFireworks() {
     spinning = false;
     disableButtons(false);
 
-    // popup + pháo hoa
     showCongrats(winner);
   }
 
-  // ===== Reset all (nút Clear -> XÓA TẤT CẢ) =====
+  // ===== Reset all (nút Clear -> XÓA KẾT QUẢ, GIỮ NHÂN VIÊN) =====
   function resetAllData() {
     if (spinning) return;
     localStorage.removeItem(LS_WIN);
     localStorage.removeItem(LS_REMAIN);
-    // giữ danh sách nhân viên hiện tại (employees) để khỏi mất
     winners = [];
     remaining = [...employees];
     saveAll();
@@ -363,26 +248,55 @@ function stopFireworks() {
     if (ta) ta.value = s.map((e) => `${e.name} | ${e.code}`).join("\n");
   }
 
-  // ===== Click handler (delegation cho chắc ăn) =====
+  // ===== Click handler =====
   function setupClicks() {
     document.addEventListener("click", (e) => {
       const t = e.target;
 
-      if (t?.id === "btnSpin") { e.preventDefault(); spin(); return; }
-      if (t?.id === "btnClear") { e.preventDefault(); resetAllData(); return; }
-      if (t?.id === "btnList") { e.preventDefault(); openEmployeesModal(); return; }
+      if (t?.id === "btnSpin") {
+        e.preventDefault();
+        spin();
+        return;
+      }
+      if (t?.id === "btnClear") {
+        e.preventDefault();
+        resetAllData();
+        return;
+      }
+      if (t?.id === "btnList") {
+        e.preventDefault();
+        openEmployeesModal();
+        return;
+      }
 
-      if (t?.id === "btnLoadSample") { e.preventDefault(); loadSampleToTextarea(); return; }
-      if (t?.id === "btnSaveEmployees") { e.preventDefault(); saveEmployeesFromTextarea(); return; }
+      if (t?.id === "btnLoadSample") {
+        e.preventDefault();
+        loadSampleToTextarea();
+        return;
+      }
+      if (t?.id === "btnSaveEmployees") {
+        e.preventDefault();
+        saveEmployeesFromTextarea();
+        return;
+      }
 
-      if (t?.dataset?.close === "employees") { e.preventDefault(); closeModal("modalEmployees"); return; }
-      if (t?.dataset?.close === "congrats") { e.preventDefault(); stopFireworks(); closeModal("modalCongrats"); return; }
+      if (t?.dataset?.close === "employees") {
+        e.preventDefault();
+        closeModal("modalEmployees");
+        return;
+      }
+      if (t?.dataset?.close === "congrats") {
+        e.preventDefault();
+        window.stopFireworks?.();
+        closeModal("modalCongrats");
+        return;
+      }
     });
 
     window.addEventListener("resize", () => {
-      // nếu popup đang mở thì resize canvas cho khớp
-      const isOpen = document.getElementById("modalCongrats")?.getAttribute("aria-hidden") === "false";
-      if (isOpen) fxResize();
+      const isOpen =
+        document.getElementById("modalCongrats")?.getAttribute("aria-hidden") === "false";
+      if (isOpen) window.__fwResize?.();
     });
   }
 
@@ -395,7 +309,10 @@ function stopFireworks() {
 
   window.addEventListener("DOMContentLoaded", init);
 })();
-// === FIREWORKS for <canvas id="fw"> ===
+
+// ==========================================================
+// FIREWORKS (bung lên rồi rơi xuống mượt) for <canvas id="fw">
+// ==========================================================
 const FW = (() => {
   const canvas = document.getElementById("fw");
   if (!canvas) return null;
@@ -406,41 +323,47 @@ const FW = (() => {
   let last = 0;
   let running = false;
 
-  // Tuning
-  const GRAVITY = 850;     // px/s^2 (rơi)
-  const DRAG = 0.985;      // cản gió
-  const TRAIL = 0.14;      // 0.08–0.18 (vệt mượt)
+  const GRAVITY = 900;     // rơi
+  const DRAG = 0.985;      // cản
+  const TRAIL = 0.12;      // vệt mượt
   const LIFE_MIN = 0.9;
   const LIFE_MAX = 1.6;
 
   const rand = (a, b) => Math.random() * (b - a) + a;
 
   function resize() {
-    // scale theo devicePixelRatio để nét
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
     const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
     canvas.width = Math.floor(rect.width * dpr);
     canvas.height = Math.floor(rect.height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return true;
   }
+
+  // expose để resize khi window resize
+  window.__fwResize = resize;
 
   function addBurst(x, y, count = 120) {
     for (let i = 0; i < count; i++) {
       const angle = rand(0, Math.PI * 2);
-      const speed = rand(220, 650);
+      const speed = rand(240, 720);
 
-      // bung + bốc lên rõ rệt
       const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed - rand(420, 780);
+      const vy = Math.sin(angle) * speed - rand(420, 820); // bung lên rõ
 
       particles.push({
-        x, y, vx, vy,
+        x,
+        y,
+        vx,
+        vy,
         r: rand(1.2, 2.6),
         life: rand(LIFE_MIN, LIFE_MAX),
         t: 0,
-        hue: rand(40, 55),    // vàng hợp theme
+        hue: rand(40, 55),
         sat: rand(75, 95),
-        lum: rand(55, 70)
+        lum: rand(55, 70),
       });
     }
   }
@@ -448,13 +371,19 @@ const FW = (() => {
   function step(now) {
     if (!running) return;
 
-    const dt = Math.min(0.033, (now - last) / 1000); // clamp cho ổn định
+    const dt = Math.min(0.033, (now - last) / 1000);
     last = now;
 
-    const w = canvas.getBoundingClientRect().width;
-    const h = canvas.getBoundingClientRect().height;
+    // Nếu modal animate/resize, resize lại cho chắc
+    if (!resize()) {
+      raf = requestAnimationFrame(step);
+      return;
+    }
 
-    // phủ lớp alpha để tạo trail
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+
     ctx.fillStyle = `rgba(0,0,0,${TRAIL})`;
     ctx.fillRect(0, 0, w, h);
 
@@ -462,53 +391,52 @@ const FW = (() => {
       const p = particles[i];
       p.t += dt;
 
-      // physics
       p.vx *= Math.pow(DRAG, dt * 60);
       p.vy = p.vy * Math.pow(DRAG, dt * 60) + GRAVITY * dt;
 
       p.x += p.vx * dt;
       p.y += p.vy * dt;
 
-      const k = p.t / p.life;           // 0..1
-      const alpha = Math.max(0, 1 - k); // mờ dần
+      const k = p.t / p.life;
+      const alpha = Math.max(0, 1 - k);
 
       ctx.beginPath();
       ctx.fillStyle = `hsla(${p.hue},${p.sat}%,${p.lum}%,${alpha})`;
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fill();
 
-      // remove
       if (p.t >= p.life || p.y > h + 60) particles.splice(i, 1);
     }
 
     if (particles.length > 0) {
       raf = requestAnimationFrame(step);
     } else {
-      // tự dừng khi hết hạt
       stop();
     }
   }
 
   function start(opts = {}) {
-    resize();
-    window.addEventListener("resize", resize);
+    // modal vừa mở có thể size = 0 => chờ nhẹ
+    if (!resize()) {
+      setTimeout(() => start(opts), 30);
+      return;
+    }
 
     running = true;
     particles = [];
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const rect = canvas.getBoundingClientRect();
+    const bursts = opts.bursts ?? 5;
+    const gap = opts.gap ?? 150;
+    const count = opts.count ?? 130;
 
-    const bursts = opts.bursts ?? 4;
-    const gap = opts.gap ?? 180;
-    const count = opts.count ?? 120;
-
-    // bắn nhiều lần cho “đã”
     for (let i = 0; i < bursts; i++) {
       setTimeout(() => {
         const x = rect.width * 0.5 + rand(-rect.width * 0.18, rect.width * 0.18);
         const y = rect.height * 0.42 + rand(-rect.height * 0.10, rect.height * 0.10);
         addBurst(x, y, count);
+
         if (!raf) {
           last = performance.now();
           raf = requestAnimationFrame(step);
@@ -523,16 +451,14 @@ const FW = (() => {
     raf = 0;
     particles = [];
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    window.removeEventListener("resize", resize);
   }
 
   return { start, stop };
 })();
 
-// Helper functions gọi cho tiện
-function startFireworks() {
-  if (FW) FW.start({ bursts: 5, gap: 150, count: 130 });
-}
-function stopFireworks() {
-  if (FW) FW.stop();
-}
+window.startFireworks = function () {
+  FW?.start({ bursts: 5, gap: 150, count: 130 });
+};
+window.stopFireworks = function () {
+  FW?.stop();
+};
