@@ -7,34 +7,42 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">LPBank</div>
-  </header>
+  <main class="page">
+    <!-- CARD 1: HEADER -->
+    <section class="card hero">
+      <div class="miniBrand">LPBANK</div>
+      <h1 class="title">Quay Số May Mắn</h1>
+    </section>
 
-  <main class="container">
-    <h1>Quay Số May Mắn</h1>
-
-    <div class="actions">
-      <button id="btnSpin" class="btn primary">Quay Số</button>
-      <button id="btnClear" class="btn">Clear</button>
-      <button id="btnList" class="btn">Danh Sách Nhân Viên</button>
-    </div>
-
-    <section class="panel">
-      <h2>Danh sách trúng thưởng</h2>
-
-      <div class="resultBox">
-        <div class="resultTitle">Kết Quả</div>
-        <div id="rolling" class="rolling">—</div>
+    <!-- CARD 2: SPIN AREA -->
+    <section class="card spinArea">
+      <div class="slots" id="slots">
+        <!-- 10 ô -->
+        <div class="slot">?</div><div class="slot">?</div><div class="slot">?</div><div class="slot">?</div><div class="slot">?</div>
+        <div class="slot">?</div><div class="slot">?</div><div class="slot">?</div><div class="slot">?</div><div class="slot">?</div>
       </div>
 
-      <div class="tableWrap">
-        <table class="table" id="winnerTable">
+      <div class="btnRow">
+        <button id="btnSpin" class="btn btnPrimary">Quay Số</button>
+        <button id="btnClear" class="btn btnGhost">Clear</button>
+        <button id="btnList" class="btn btnGhost">Danh Sách Nhân Viên</button>
+      </div>
+    </section>
+
+    <!-- CARD 3: RESULT TABLE -->
+    <section class="card resultCard">
+      <div class="resultTop">
+        <div class="subcap">DANH SÁCH TRÚNG THƯỞNG</div>
+        <div class="resultTitle">Kết Quả</div>
+      </div>
+
+      <div class="tableShell">
+        <table class="tbl">
           <thead>
             <tr>
-              <th style="width:80px;">STT</th>
-              <th>Tên Nhân viên</th>
-              <th style="width:180px;">Mã Nhân viên</th>
+              <th style="width:140px;">STT</th>
+              <th>TÊN NHÂN VIÊN</th>
+              <th style="width:320px;">MÃ NHÂN VIÊN</th>
             </tr>
           </thead>
           <tbody id="winnerTbody">
@@ -43,83 +51,36 @@
         </table>
       </div>
     </section>
-  </main>
 
-  <!-- Modal: Congrats -->
-  <div class="modal" id="modalCongrats" aria-hidden="true">
-    <div class="modalBackdrop" data-close="congrats"></div>
-    <div class="modalCard">
-      <div class="modalHead">
-        <div class="modalTitle">Xin Chúc Mừng!!</div>
-        <button class="iconBtn" data-close="congrats" title="Đóng">×</button>
-      </div>
-      <div class="modalBody">
-        <div class="winnerBig" id="winnerBig">—</div>
-        <div class="winnerSub" id="winnerSub">—</div>
-      </div>
-      <div class="modalFoot">
-        <button class="btn primary" data-close="congrats">Đóng</button>
-      </div>
-    </div>
-  </div>
+    <!-- Modal: Employees -->
+    <div class="modal" id="modalEmployees" aria-hidden="true">
+      <div class="modalBackdrop" data-close="employees"></div>
+      <div class="modalCard">
+        <div class="modalHead">
+          <div class="modalTitle">Danh Sách Nhân Viên</div>
+          <button class="xBtn" data-close="employees">×</button>
+        </div>
 
-  <!-- Modal: Employee list -->
-  <div class="modal" id="modalEmployees" aria-hidden="true">
-    <div class="modalBackdrop" data-close="employees"></div>
-    <div class="modalCard modalWide">
-      <div class="modalHead">
-        <div class="modalTitle">Danh Sách Nhân Viên</div>
-        <button class="iconBtn" data-close="employees" title="Đóng">×</button>
-      </div>
+        <div class="modalBody">
+          <label class="label">Mỗi dòng: Tên | Mã</label>
+          <textarea id="employeeInput" rows="12" class="ta" placeholder="Nguyễn Văn A | NV001"></textarea>
 
-      <div class="modalBody">
-        <div class="grid2">
-          <div>
-            <label class="label">Nhập danh sách (mỗi dòng: Tên | Mã). Ví dụ: Nguyễn Văn A | NV001</label>
-            <textarea id="employeeInput" class="textarea" rows="12" placeholder="Nguyễn Văn A | NV001&#10;Trần Thị B | NV002"></textarea>
-
-            <div class="miniActions">
-              <button id="btnLoadSample" class="btn">Nạp mẫu</button>
-              <button id="btnSaveEmployees" class="btn primary">Lưu danh sách</button>
-            </div>
-
-            <div class="hint">
-              * Dữ liệu được lưu trên trình duyệt (localStorage). Mở lại vẫn còn.
-            </div>
+          <div class="miniRow">
+            <button id="btnLoadSample" class="btn btnGhost">Nạp mẫu</button>
+            <button id="btnSaveEmployees" class="btn btnPrimary">Lưu danh sách</button>
           </div>
 
-          <div>
-            <div class="infoBar">
-              <div>Tổng nhân viên: <b id="empCount">0</b></div>
-              <div>Còn lại để quay: <b id="empRemain">0</b></div>
-            </div>
-
-            <div class="tableWrap">
-              <table class="table small">
-                <thead>
-                  <tr>
-                    <th style="width:70px;">STT</th>
-                    <th>Tên Nhân viên</th>
-                    <th style="width:160px;">Mã Nhân viên</th>
-                  </tr>
-                </thead>
-                <tbody id="empTbody"></tbody>
-              </table>
-            </div>
-
-            <div class="miniActions">
-              <button id="btnResetWinners" class="btn danger">Xoá danh sách trúng thưởng</button>
-              <button id="btnResetAll" class="btn danger">Reset tất cả</button>
-            </div>
+          <div class="hint">
+            * Dữ liệu lưu trên trình duyệt. Muốn xoá trúng thưởng → bấm nút reset trong app (nếu bạn đã có).
           </div>
         </div>
-      </div>
 
-      <div class="modalFoot">
-        <button class="btn" data-close="employees">Đóng</button>
+        <div class="modalFoot">
+          <button class="btn btnGhost" data-close="employees">Đóng</button>
+        </div>
       </div>
     </div>
-  </div>
+  </main>
 
   <script src="app.js"></script>
 </body>
