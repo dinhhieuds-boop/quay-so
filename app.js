@@ -162,7 +162,7 @@
     const nameEl = document.getElementById("winName");
     const codeEl = document.getElementById("winCode");
     if (nameEl) nameEl.textContent = winner.name;
-    if (codeEl) codeEl.textContent = `Mã nhân viên: ${winner.code}`;
+    if (codeEl) codeEl.textContent = winner.code};
 
     openModal("modalCongrats");
     startFireworks(); // pháo hoa
