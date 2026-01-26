@@ -317,3 +317,20 @@ body{
   color:rgba(255,249,234,.88);
   margin-bottom:10px;
 }
+/* ===== FIX: Căn giữa bảng kết quả (STT / Tên / Mã) ===== */
+.tbl thead th,
+.tbl tbody td{
+  text-align:center;
+  vertical-align:middle;
+}
+
+/* Nếu muốn tên vẫn dễ đọc mà không bị lệch */
+.tbl tbody td:nth-child(2){
+  font-weight:700;
+}
+
+/* Giữ số + mã nhìn gọn */
+.tbl tbody td:nth-child(1),
+.tbl tbody td:nth-child(3){
+  font-variant-numeric: tabular-nums;
+}
