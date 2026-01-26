@@ -395,3 +395,144 @@ function stopFireworks() {
 
   window.addEventListener("DOMContentLoaded", init);
 })();
+// === FIREWORKS for <canvas id="fw"> ===
+const FW = (() => {
+  const canvas = document.getElementById("fw");
+  if (!canvas) return null;
+  const ctx = canvas.getContext("2d", { alpha: true });
+
+  let particles = [];
+  let raf = 0;
+  let last = 0;
+  let running = false;
+
+  // Tuning
+  const GRAVITY = 850;     // px/s^2 (rơi)
+  const DRAG = 0.985;      // cản gió
+  const TRAIL = 0.14;      // 0.08–0.18 (vệt mượt)
+  const LIFE_MIN = 0.9;
+  const LIFE_MAX = 1.6;
+
+  const rand = (a, b) => Math.random() * (b - a) + a;
+
+  function resize() {
+    // scale theo devicePixelRatio để nét
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function addBurst(x, y, count = 120) {
+    for (let i = 0; i < count; i++) {
+      const angle = rand(0, Math.PI * 2);
+      const speed = rand(220, 650);
+
+      // bung + bốc lên rõ rệt
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed - rand(420, 780);
+
+      particles.push({
+        x, y, vx, vy,
+        r: rand(1.2, 2.6),
+        life: rand(LIFE_MIN, LIFE_MAX),
+        t: 0,
+        hue: rand(40, 55),    // vàng hợp theme
+        sat: rand(75, 95),
+        lum: rand(55, 70)
+      });
+    }
+  }
+
+  function step(now) {
+    if (!running) return;
+
+    const dt = Math.min(0.033, (now - last) / 1000); // clamp cho ổn định
+    last = now;
+
+    const w = canvas.getBoundingClientRect().width;
+    const h = canvas.getBoundingClientRect().height;
+
+    // phủ lớp alpha để tạo trail
+    ctx.fillStyle = `rgba(0,0,0,${TRAIL})`;
+    ctx.fillRect(0, 0, w, h);
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.t += dt;
+
+      // physics
+      p.vx *= Math.pow(DRAG, dt * 60);
+      p.vy = p.vy * Math.pow(DRAG, dt * 60) + GRAVITY * dt;
+
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+
+      const k = p.t / p.life;           // 0..1
+      const alpha = Math.max(0, 1 - k); // mờ dần
+
+      ctx.beginPath();
+      ctx.fillStyle = `hsla(${p.hue},${p.sat}%,${p.lum}%,${alpha})`;
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // remove
+      if (p.t >= p.life || p.y > h + 60) particles.splice(i, 1);
+    }
+
+    if (particles.length > 0) {
+      raf = requestAnimationFrame(step);
+    } else {
+      // tự dừng khi hết hạt
+      stop();
+    }
+  }
+
+  function start(opts = {}) {
+    resize();
+    window.addEventListener("resize", resize);
+
+    running = true;
+    particles = [];
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const rect = canvas.getBoundingClientRect();
+
+    const bursts = opts.bursts ?? 4;
+    const gap = opts.gap ?? 180;
+    const count = opts.count ?? 120;
+
+    // bắn nhiều lần cho “đã”
+    for (let i = 0; i < bursts; i++) {
+      setTimeout(() => {
+        const x = rect.width * 0.5 + rand(-rect.width * 0.18, rect.width * 0.18);
+        const y = rect.height * 0.42 + rand(-rect.height * 0.10, rect.height * 0.10);
+        addBurst(x, y, count);
+        if (!raf) {
+          last = performance.now();
+          raf = requestAnimationFrame(step);
+        }
+      }, i * gap);
+    }
+  }
+
+  function stop() {
+    running = false;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    particles = [];
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    window.removeEventListener("resize", resize);
+  }
+
+  return { start, stop };
+})();
+
+// Helper functions gọi cho tiện
+function startFireworks() {
+  if (FW) FW.start({ bursts: 5, gap: 150, count: 130 });
+}
+function stopFireworks() {
+  if (FW) FW.stop();
+}
