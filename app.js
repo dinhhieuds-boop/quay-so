@@ -168,118 +168,123 @@
     startFireworks(); // pháo hoa
   }
 
-  // ===== Fireworks (canvas) =====
-  const fw = {
-    canvas: null,
-    ctx: null,
-    w: 0,
-    h: 0,
-    particles: [],
-    running: false,
-    stopAt: 0,
-    raf: 0,
-  };
+ // ===== Confetti đơn giản (canvas) =====
+const fx = {
+  canvas: null,
+  ctx: null,
+  w: 0,
+  h: 0,
+  pieces: [],
+  running: false,
+  raf: 0,
+  stopAt: 0,
+};
 
-  function fwResize() {
-    const canvas = document.getElementById("fw");
-    if (!canvas) return;
-    fw.canvas = canvas;
-    fw.ctx = canvas.getContext("2d");
+function fxResize() {
+  const canvas = document.getElementById("fw");
+  if (!canvas) return;
+  fx.canvas = canvas;
+  fx.ctx = canvas.getContext("2d");
 
-    // Set size theo card hiện tại
-    const card = canvas.closest(".modalCard") || canvas.parentElement;
-    const rect = card.getBoundingClientRect();
-    fw.w = Math.max(300, Math.floor(rect.width));
-    fw.h = Math.max(240, Math.floor(rect.height));
-    canvas.width = fw.w * devicePixelRatio;
-    canvas.height = fw.h * devicePixelRatio;
-    canvas.style.width = fw.w + "px";
-    canvas.style.height = fw.h + "px";
-    fw.ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  const card = canvas.closest(".modalCard") || canvas.parentElement;
+  const rect = card.getBoundingClientRect();
+
+  fx.w = Math.max(320, Math.floor(rect.width));
+  fx.h = Math.max(240, Math.floor(rect.height));
+
+  canvas.width = fx.w * devicePixelRatio;
+  canvas.height = fx.h * devicePixelRatio;
+  canvas.style.width = fx.w + "px";
+  canvas.style.height = fx.h + "px";
+  fx.ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+
+function spawnConfettiBurst() {
+  const colors = ["#f6dd93", "#ffffff", "#eec96f", "#7fe3ff", "#a7ff7f", "#ff7fbf", "#b67fff"];
+  const count = 160;
+
+  for (let i = 0; i < count; i++) {
+    const size = 6 + Math.random() * 8;
+    fx.pieces.push({
+      x: Math.random() * fx.w,
+      y: -20 - Math.random() * 200,
+      w: size,
+      h: size * (0.6 + Math.random()),
+      vx: -1.2 + Math.random() * 2.4,
+      vy: 1.2 + Math.random() * 2.8,
+      rot: Math.random() * Math.PI,
+      vr: -0.12 + Math.random() * 0.24,
+      life: 220 + Math.random() * 80,
+      c: colors[Math.floor(Math.random() * colors.length)],
+      shape: Math.random() < 0.5 ? "rect" : "dot",
+    });
   }
+}
 
-  function fwBurst(x, y) {
-    const count = 70;
-    for (let i = 0; i < count; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const sp = 2 + Math.random() * 5.5;
-      fw.particles.push({
-        x, y,
-        vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp,
-        life: 60 + Math.random() * 30,
-        r: 2 + Math.random() * 2,
-        // màu vàng / trắng / cam
-        c: Math.random() < 0.5 ? "rgba(246,221,147,0.95)" :
-           Math.random() < 0.7 ? "rgba(255,255,255,0.92)" :
-                                 "rgba(238,201,111,0.92)"
-      });
-    }
-  }
+function fxStep() {
+  if (!fx.running) return;
+  const ctx = fx.ctx;
+  if (!ctx) return;
 
-  function fwStep() {
-    if (!fw.running) return;
+  // clear trong suốt (không làm nền bị đen như fireworks)
+  ctx.clearRect(0, 0, fx.w, fx.h);
 
-    const ctx = fw.ctx;
-    if (!ctx) return;
+  for (let i = fx.pieces.length - 1; i >= 0; i--) {
+    const p = fx.pieces[i];
 
-    // fade nhẹ để tạo vệt
-    ctx.fillStyle = "rgba(0,0,0,0.14)";
-    ctx.fillRect(0, 0, fw.w, fw.h);
+    // physics
+    p.vy += 0.01; // gravity nhẹ
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rot += p.vr;
+    p.life -= 1;
 
-    // update particles
-    for (let i = fw.particles.length - 1; i >= 0; i--) {
-      const p = fw.particles[i];
-      p.vy += 0.08; // gravity
-      p.x += p.vx;
-      p.y += p.vy;
-      p.life -= 1;
+    // draw
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = p.c;
 
+    if (p.shape === "dot") {
       ctx.beginPath();
-      ctx.fillStyle = p.c;
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.arc(0, 0, p.w * 0.35, 0, Math.PI * 2);
       ctx.fill();
-
-      if (p.life <= 0 || p.y > fw.h + 20 || p.x < -20 || p.x > fw.w + 20) {
-        fw.particles.splice(i, 1);
-      }
+    } else {
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
     }
+    ctx.restore();
 
-    // thỉnh thoảng nổ thêm
-    if (Math.random() < 0.10) {
-      fwBurst(60 + Math.random() * (fw.w - 120), 80 + Math.random() * 120);
-    }
-
-    // auto stop
-    if (Date.now() > fw.stopAt && fw.particles.length === 0) {
-      stopFireworks();
-      return;
-    }
-
-    fw.raf = requestAnimationFrame(fwStep);
-  }
-
-  function startFireworks() {
-    fwResize();
-    fw.particles = [];
-    fw.running = true;
-    fw.stopAt = Date.now() + 1800; // chạy ~1.8s
-    // nổ đầu tiên 2 phát
-    fwBurst(fw.w * 0.30, fw.h * 0.35);
-    fwBurst(fw.w * 0.70, fw.h * 0.35);
-
-    cancelAnimationFrame(fw.raf);
-    fw.raf = requestAnimationFrame(fwStep);
-  }
-
-  function stopFireworks() {
-    fw.running = false;
-    cancelAnimationFrame(fw.raf);
-    // clear canvas
-    if (fw.ctx) {
-      fw.ctx.clearRect(0, 0, fw.w, fw.h);
+    // remove
+    if (p.life <= 0 || p.y > fx.h + 40 || p.x < -50 || p.x > fx.w + 50) {
+      fx.pieces.splice(i, 1);
     }
   }
+
+  if (Date.now() > fx.stopAt && fx.pieces.length === 0) {
+    stopFireworks(); // dùng lại tên hàm để khỏi sửa nhiều chỗ
+    return;
+  }
+
+  fx.raf = requestAnimationFrame(fxStep);
+}
+
+// giữ tên hàm để code cũ không phải sửa
+function startFireworks() {
+  fxResize();
+  fx.pieces = [];
+  fx.running = true;
+  fx.stopAt = Date.now() + 2200; // confetti chạy ~2.2s
+  spawnConfettiBurst();
+
+  cancelAnimationFrame(fx.raf);
+  fx.raf = requestAnimationFrame(fxStep);
+}
+
+function stopFireworks() {
+  fx.running = false;
+  cancelAnimationFrame(fx.raf);
+  if (fx.ctx) fx.ctx.clearRect(0, 0, fx.w, fx.h);
+}
 
   // ===== Spin =====
   function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
@@ -303,8 +308,8 @@
     spinning = true;
     disableButtons(true);
 
-    const duration = 2400;
-    const tick = 70;
+    const duration = 3800;
+    const tick = 60;
     const start = performance.now();
 
     while (performance.now() - start < duration) {
