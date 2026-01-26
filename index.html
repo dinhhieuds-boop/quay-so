@@ -3,34 +3,123 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Quay số</title>
+  <title>Quay Số May Mắn</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="wrap">
-    <h1>🎡 Quay số</h1>
+  <header class="topbar">
+    <div class="brand">LPBank</div>
+  </header>
 
-    <section class="board">
-      <div class="pointer" aria-hidden="true"></div>
-      <canvas id="wheel" width="520" height="520"></canvas>
-    </section>
+  <main class="container">
+    <h1>Quay Số May Mắn</h1>
+
+    <div class="actions">
+      <button id="btnSpin" class="btn primary">Quay Số</button>
+      <button id="btnClear" class="btn">Clear</button>
+      <button id="btnList" class="btn">Danh Sách Nhân Viên</button>
+    </div>
 
     <section class="panel">
-      <div class="row">
-        <label>Danh sách (mỗi dòng 1 mục):</label>
-        <textarea id="items" rows="8"></textarea>
+      <h2>Danh sách trúng thưởng</h2>
+
+      <div class="resultBox">
+        <div class="resultTitle">Kết Quả</div>
+        <div id="rolling" class="rolling">—</div>
       </div>
 
-      <div class="row grid">
-        <button id="spin">QUAY</button>
-        <button id="shuffle" class="ghost">Trộn</button>
-        <button id="reset" class="ghost">Reset</button>
+      <div class="tableWrap">
+        <table class="table" id="winnerTable">
+          <thead>
+            <tr>
+              <th style="width:80px;">STT</th>
+              <th>Tên Nhân viên</th>
+              <th style="width:180px;">Mã Nhân viên</th>
+            </tr>
+          </thead>
+          <tbody id="winnerTbody">
+            <tr class="emptyRow"><td colspan="3">Chưa có kết quả</td></tr>
+          </tbody>
+        </table>
       </div>
-
-      <p class="result">Kết quả: <strong id="result">—</strong></p>
-      <p class="note">Mẹo: nhập “A, B, C…” mỗi dòng 1 mục. Wheel tự vẽ lại theo danh sách.</p>
     </section>
   </main>
+
+  <!-- Modal: Congrats -->
+  <div class="modal" id="modalCongrats" aria-hidden="true">
+    <div class="modalBackdrop" data-close="congrats"></div>
+    <div class="modalCard">
+      <div class="modalHead">
+        <div class="modalTitle">Xin Chúc Mừng!!</div>
+        <button class="iconBtn" data-close="congrats" title="Đóng">×</button>
+      </div>
+      <div class="modalBody">
+        <div class="winnerBig" id="winnerBig">—</div>
+        <div class="winnerSub" id="winnerSub">—</div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn primary" data-close="congrats">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Employee list -->
+  <div class="modal" id="modalEmployees" aria-hidden="true">
+    <div class="modalBackdrop" data-close="employees"></div>
+    <div class="modalCard modalWide">
+      <div class="modalHead">
+        <div class="modalTitle">Danh Sách Nhân Viên</div>
+        <button class="iconBtn" data-close="employees" title="Đóng">×</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="grid2">
+          <div>
+            <label class="label">Nhập danh sách (mỗi dòng: Tên | Mã). Ví dụ: Nguyễn Văn A | NV001</label>
+            <textarea id="employeeInput" class="textarea" rows="12" placeholder="Nguyễn Văn A | NV001&#10;Trần Thị B | NV002"></textarea>
+
+            <div class="miniActions">
+              <button id="btnLoadSample" class="btn">Nạp mẫu</button>
+              <button id="btnSaveEmployees" class="btn primary">Lưu danh sách</button>
+            </div>
+
+            <div class="hint">
+              * Dữ liệu được lưu trên trình duyệt (localStorage). Mở lại vẫn còn.
+            </div>
+          </div>
+
+          <div>
+            <div class="infoBar">
+              <div>Tổng nhân viên: <b id="empCount">0</b></div>
+              <div>Còn lại để quay: <b id="empRemain">0</b></div>
+            </div>
+
+            <div class="tableWrap">
+              <table class="table small">
+                <thead>
+                  <tr>
+                    <th style="width:70px;">STT</th>
+                    <th>Tên Nhân viên</th>
+                    <th style="width:160px;">Mã Nhân viên</th>
+                  </tr>
+                </thead>
+                <tbody id="empTbody"></tbody>
+              </table>
+            </div>
+
+            <div class="miniActions">
+              <button id="btnResetWinners" class="btn danger">Xoá danh sách trúng thưởng</button>
+              <button id="btnResetAll" class="btn danger">Reset tất cả</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modalFoot">
+        <button class="btn" data-close="employees">Đóng</button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
