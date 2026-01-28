@@ -8,8 +8,6 @@
   let remaining = [];
   let spinning = false;
 
-  const $ = (sel) => document.querySelector(sel);
-
   function escapeHtml(s) {
     return String(s ?? "")
       .replaceAll("&", "&amp;")
@@ -67,11 +65,13 @@
     winners = JSON.parse(localStorage.getItem(LS_WIN) || "[]");
     remaining = JSON.parse(localStorage.getItem(LS_REMAIN) || "[]");
 
+    // nếu có employees nhưng remaining trống => rebuild remaining = employees - winners
     if (employees.length && !remaining.length) {
       const winCodes = new Set(winners.map((w) => w.code));
       remaining = employees.filter((e) => !winCodes.has(e.code));
     }
 
+    // lần đầu chạy
     if (!employees.length) {
       employees = sampleEmployees();
       winners = [];
@@ -161,11 +161,11 @@
     const nameEl = document.getElementById("winName");
     const codeEl = document.getElementById("winCode");
     if (nameEl) nameEl.textContent = winner.name;
-    if (codeEl) codeEl.textContent = winner.code; // chỉ hiện số mã
+    if (codeEl) codeEl.textContent = winner.code;
 
     openModal("modalCongrats");
 
-    // CHỜ modal render xong -> canvas có size thật
+    // chờ modal render xong để canvas có size thật
     requestAnimationFrame(() => {
       window.startFireworks?.();
     });
@@ -218,7 +218,7 @@
     showCongrats(winner);
   }
 
-  // ===== Reset all (nút Clear -> XÓA KẾT QUẢ, GIỮ NHÂN VIÊN) =====
+  // ===== Reset all (Clear: XÓA KẾT QUẢ, GIỮ NHÂN VIÊN) =====
   function resetAllData() {
     if (spinning) return;
     localStorage.removeItem(LS_WIN);
@@ -331,7 +331,7 @@ const FW = (() => {
   // ===== Tuning =====
   const GRAVITY = 980;         // trọng lực
   const DRAG = 0.985;          // cản không khí
-  const TRAIL = 0.18;          // vệt mờ (0.12 -> 0.25). Không dùng nền đen nữa
+  const TRAIL = 0.18;          // vệt mờ (destination-out)
   const LIFE_MIN = 0.9;
   const LIFE_MAX = 1.8;
 
@@ -362,7 +362,7 @@ const FW = (() => {
   window.__fwResize = resize;
 
   function clearSoft(w, h) {
-    // QUAN TRỌNG: làm mờ bằng "destination-out" để giữ nền trong suốt
+    // làm mờ bằng "destination-out" để giữ nền trong suốt
     ctx.save();
     ctx.globalCompositeOperation = "destination-out";
     ctx.fillStyle = `rgba(0,0,0,${TRAIL})`;
@@ -375,10 +375,9 @@ const FW = (() => {
     rockets.push({
       x,
       y: fromY,
-      vx: rand(-120, 120),     // lệch nhẹ
+      vx: rand(-120, 120),
       vy: -speed,
       toY,
-      t: 0,
       hue: rand(40, 55),
       sat: rand(75, 95),
       lum: rand(55, 75),
@@ -394,7 +393,7 @@ const FW = (() => {
         x,
         y,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - rand(120, 380), // nổ bung lên rõ
+        vy: Math.sin(angle) * speed - rand(120, 380),
         r: rand(1.2, 2.6),
         life: rand(LIFE_MIN, LIFE_MAX),
         t: 0,
@@ -406,13 +405,11 @@ const FW = (() => {
   }
 
   function drawRocket(rk) {
-    // vệt rocket
     ctx.beginPath();
     ctx.fillStyle = `hsla(${rk.hue},${rk.sat}%,${rk.lum}%,0.95)`;
     ctx.arc(rk.x, rk.y, 2.0, 0, Math.PI * 2);
     ctx.fill();
 
-    // tia sáng nhỏ phía sau
     ctx.beginPath();
     ctx.strokeStyle = `hsla(${rk.hue},${rk.sat}%,${rk.lum}%,0.35)`;
     ctx.lineWidth = 1.2;
@@ -446,30 +443,27 @@ const FW = (() => {
     const w = rect.width;
     const h = rect.height;
 
-    // làm mờ khung trước, giữ nền trong suốt
     clearSoft(w, h);
 
-    // === Update & draw rockets ===
+    // rockets
     for (let i = rockets.length - 1; i >= 0; i--) {
       const rk = rockets[i];
-      rk.t += dt;
 
       rk.vx *= Math.pow(DRAG, dt * 60);
-      rk.vy = rk.vy * Math.pow(DRAG, dt * 60) + GRAVITY * dt * 0.15; // rocket ít bị rơi
+      rk.vy = rk.vy * Math.pow(DRAG, dt * 60) + GRAVITY * dt * 0.15;
 
       rk.x += rk.vx * dt;
       rk.y += rk.vy * dt;
 
       drawRocket(rk);
 
-      // đến độ cao mục tiêu thì nổ
       if (rk.y <= rk.toY || rk.vy > -120) {
         burst(rk.x, rk.y, rk.hue, SPARK_COUNT);
         rockets.splice(i, 1);
       }
     }
 
-    // === Update & draw sparks ===
+    // sparks
     for (let i = sparks.length - 1; i >= 0; i--) {
       const p = sparks[i];
       p.t += dt;
@@ -493,7 +487,6 @@ const FW = (() => {
   }
 
   function start(opts = {}) {
-    // modal vừa mở có thể size = 0 => chờ nhẹ
     if (!resize()) {
       setTimeout(() => start(opts), 30);
       return;
@@ -507,18 +500,16 @@ const FW = (() => {
     sparks = [];
 
     const rect = canvas.getBoundingClientRect();
-    const bursts = opts.bursts ?? 5;
-    const gap = opts.gap ?? 170;
+    const bursts = opts.bursts ?? 6;
+    const gap = opts.gap ?? 160;
 
-    // clear hẳn 1 lần đầu
     ctx.clearRect(0, 0, rect.width, rect.height);
 
     for (let i = 0; i < bursts; i++) {
       setTimeout(() => {
-        // bắn từ dưới lên
         const x = rect.width * 0.5 + rand(-rect.width * 0.22, rect.width * 0.22);
         const fromY = rect.height + 20;
-        const toY = rect.height * rand(0.22, 0.45); // cao vừa, nhìn "nổ" rõ
+        const toY = rect.height * rand(0.22, 0.45);
         addRocket(x, fromY, toY);
 
         if (!raf) {
@@ -535,7 +526,6 @@ const FW = (() => {
     raf = 0;
     rockets = [];
     sparks = [];
-    // clear để canvas trong suốt sạch
     const rect = canvas.getBoundingClientRect();
     ctx.clearRect(0, 0, rect.width, rect.height);
   }
@@ -545,53 +535,6 @@ const FW = (() => {
 
 window.startFireworks = function () {
   FW?.start({ bursts: 6, gap: 160 });
-};
-window.stopFireworks = function () {
-  FW?.stop();
-};
-
-    // modal vừa mở có thể size = 0 => chờ nhẹ
-    if (!resize()) {
-      setTimeout(() => start(opts), 30);
-      return;
-    }
-
-    running = true;
-    particles = [];
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const rect = canvas.getBoundingClientRect();
-    const bursts = opts.bursts ?? 5;
-    const gap = opts.gap ?? 150;
-    const count = opts.count ?? 130;
-
-    for (let i = 0; i < bursts; i++) {
-      setTimeout(() => {
-        const x = rect.width * 0.5 + rand(-rect.width * 0.18, rect.width * 0.18);
-        const y = rect.height * 0.42 + rand(-rect.height * 0.10, rect.height * 0.10);
-        addBurst(x, y, count);
-
-        if (!raf) {
-          last = performance.now();
-          raf = requestAnimationFrame(step);
-        }
-      }, i * gap);
-    }
-  }
-
-  function stop() {
-    running = false;
-    if (raf) cancelAnimationFrame(raf);
-    raf = 0;
-    particles = [];
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-
-  return { start, stop };
-})();
-
-window.startFireworks = function () {
-  FW?.start({ bursts: 5, gap: 150, count: 130 });
 };
 window.stopFireworks = function () {
   FW?.stop();
