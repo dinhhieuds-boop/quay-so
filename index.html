@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Quay Số May Mắn</title>
-  <link rel="stylesheet" href="style_v2.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="page">
@@ -17,15 +17,14 @@
     <!-- CARD 2: SPIN AREA -->
     <section class="card spinArea">
       <div class="slots" id="slots">
-        <!-- 10 ô -->
-        <div class="slot">?</div><div class="slot">?</div><div class="slot">?</div><div class="slot">?</div><div class="slot">?</div>
-        <div class="slot">?</div><div class="slot">?</div><div class="slot">?</div><div class="slot">?</div><div class="slot">?</div>
+        <!-- 03 ô -->
+        <div class="slot">?</div><div class="slot">?</div><div class="slot">?</div>
       </div>
 
       <div class="btnRow">
         <button id="btnSpin" type="button" class="btn btnPrimary">Quay Số</button>
         <button id="btnClear" type="button" class="btn btnGhost">Clear</button>
-        <button id="btnList" type="button" class="btn btnGhost">Danh Sách Nhân Viên</button>
+        <button id="btnList" type="button" class="btn btnGhost">Danh Sách Mã Số</button>
       </div>
     </section>
 
@@ -57,16 +56,16 @@
       <div class="modalBackdrop" data-close="employees"></div>
       <div class="modalCard">
         <div class="modalHead">
-          <div class="modalTitle">Danh Sách Nhân Viên</div>
+          <div class="modalTitle">Danh Sách Mã Số</div>
           <button type="button" class="xBtn" data-close="employees">×</button>
         </div>
 
         <div class="modalBody">
-          <label class="label">Mỗi dòng: Tên | Mã</label>
-          <textarea id="employeeInput" rows="12" class="ta" placeholder="Nguyễn Văn A | NV001"></textarea>
+          <label class="label">Mỗi dòng: MÃ SỐ MAY MẮN | 001</label>
+          <textarea id="employeeInput" rows="12" class="ta" placeholder="MÃ SỐ MAY MẮN | 001"></textarea>
 
           <div class="miniRow">
-            <button id="btnLoadSample" type="button" class="btn btnGhost">Nạp mẫu</button>
+            <button id="btnLoadSample" type="button" class="btn btnGhost">Nạp mẫu 001–220</button>
             <button id="btnSaveEmployees" type="button" class="btn btnPrimary">Lưu danh sách</button>
           </div>
 
@@ -105,6 +104,6 @@
   </div>
 </div>
 
-  <script src="app_v2.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
