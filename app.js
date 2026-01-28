@@ -18,40 +18,8 @@
   }
 
   function sampleEmployees() {
-    return [
-      { name: "Nguyễn Thị Thu Nga", code: "3000014762" },
-      { name: "Nguyễn Thị Thanh Huyền", code: "3000029493" },
-      { name: "Phạm Thị Thùy Linh", code: "3000030043" },
-      { name: "Nguyễn Thị Lan", code: "2014004731" },
-      { name: "Lê Minh Quân", code: "3000028101" },
-      { name: "Dương Thị Định", code: "2012002614" },
-      { name: "Nguyễn Minh Hằng", code: "3000025227" },
-      { name: "Hoàng Thị Thu Hương", code: "3000029777" },
-      { name: "Trần Ngọc Anh", code: "3000026152" },
-      { name: "Đỗ Đình Hiếu", code: "3000006381" },
-      { name: "Dương Duy Thành", code: "3000028102" },
-      { name: "Nguyễn Thị Lan Hương", code: "3000031496" },
-      { name: "Nguyễn Ngọc Sơn", code: "3000012486" },
-      { name: "Nguyễn Thị Mai", code: "3000014605" },
-      { name: "Nguyễn Trà My", code: "3000016223" },
-      { name: "Trần Chí Kiên", code: "2012102684" },
-      { name: "Hoàng Thị Hồng Nhung", code: "3000028083" },
-      { name: "Nguyễn Thị Cúc", code: "3000031009" },
-      { name: "Đặng Thị Nhung", code: "3000032038" },
-      { name: "Nguyễn Thị Hồng", code: "3000031703" },
-      { name: "Hoàng Tùng Lâm", code: "3000031008" },
-      { name: "Đỗ Thị Dung Quỳnh", code: "3000031710" },
-      { name: "Phạm Ngọc Hiền Linh", code: "3000014308" },
-      { name: "Lê Hồng Nhung", code: "3000023364" },
-      { name: "Nguyễn Mai Phương", code: "3000029219" },
-      { name: "Trần Minh Phương", code: "3000025815" },
-      { name: "Bùi Thị Nguyệt", code: "3000032443" },
-      { name: "Bùi Hải Yến", code: "3000032810" },
-      { name: "Lê Tuấn Anh", code: "3000032036" },
-      { name: "Châu Thị Sương", code: "3000026258" },
-      { name: "Đỗ Thị Thu Sương", code: "3000028369" },
-      { name: "Trân Gia Bảo", code: "3000027042" },
-    ];
+    // Không tự sinh: danh sách mã sẽ theo số lượng bạn IMPORT trong "Danh Sách Mã Số"
+    return [];
   }
 
   function saveAll() {
@@ -68,6 +36,21 @@
     winners = winners.map((w, i) => ({ ...w, round: w.round ?? (i + 1) }));
     remaining = JSON.parse(localStorage.getItem(LS_REMAIN) || "[]");
 
+    // Nếu dữ liệu cũ không đúng format 001-220 => reset theo danh sách MÃ SỐ MAY MẮN
+    const looksLikeLuckyCodes = (arr) =>
+      Array.isArray(arr) &&
+      arr.length > 0 &&
+      arr.every((e) => typeof e?.code === "string" && /^\d{3}$/.test(e.code));
+
+    if (employees.length && !looksLikeLuckyCodes(employees)) {
+      employees = sampleEmployees();
+      winners = [];
+      remaining = [...employees];
+      saveAll();
+      return;
+    }
+
+
     // nếu có employees nhưng remaining trống => rebuild remaining = employees - winners
     if (employees.length && !remaining.length) {
       const winCodes = new Set(winners.map((w) => w.code));
@@ -76,6 +59,7 @@
 
     // lần đầu chạy
     if (!employees.length) {
+      // Chưa có danh sách mã -> để trống, người dùng sẽ import
       employees = sampleEmployees();
       winners = [];
       remaining = [...employees];
@@ -98,8 +82,9 @@
   }
 
   function showWinnerOnSlots(w) {
-    const code = String(w?.code ?? "");
-    const chars = code.padEnd(10, "*").slice(0, 10).split("");
+    const raw = String(w?.code ?? "");
+    const code3 = raw.length >= 3 ? raw.slice(-3) : raw.padStart(3, "0");
+    const chars = code3.split("");
     getSlots().forEach((s, i) => (s.textContent = chars[i] ?? "?"));
   }
 
@@ -131,11 +116,25 @@
 
     const out = [];
     for (const line of lines) {
-      const parts = line.split("|").map((s) => s.trim());
-      const name = parts[0] ?? "";
-      const code = parts[1] ?? "";
-      if (!name) continue;
-      out.push({ name, code: code || "NV" + String(out.length + 1).padStart(3, "0") });
+      // Cho phép 2 kiểu nhập:
+      // 1) chỉ mã: 001
+      // 2) name|code (nếu bạn muốn ghi chú): ABC|001
+      let name = "MÃ SỐ MAY MẮN";
+      let code = "";
+
+      if (line.includes("|")) {
+        const parts = line.split("|").map((s) => s.trim());
+        name = parts[0] || "MÃ SỐ MAY MẮN";
+        code = parts[1] || "";
+      } else {
+        code = line;
+      }
+
+      // Chuẩn hoá mã: nếu là số -> pad 3 ký tự (1 -> 001)
+      if (/^\d+$/.test(code)) code = String(parseInt(code, 10)).padStart(3, "0");
+
+      if (!code) continue;
+      out.push({ name, code });
     }
 
     const seen = new Set();
@@ -156,7 +155,7 @@
 
   function openEmployeesModal() {
     const ta = document.getElementById("employeeInput");
-    if (ta) ta.value = employees.map((e) => `${e.name} | ${e.code}`).join("\n");
+    if (ta) ta.value = employees.map((e) => `${e.code}`).join("\n");
     openModal("modalEmployees");
   }
 
@@ -189,8 +188,16 @@
   async function spin() {
     if (spinning) return;
 
+    if (!employees.length) {
+      // Chưa import danh sách mã
+      const msg = ["N", "H", "Ậ"]; // "NHẬ" (hiểu là NHẬP)
+      getSlots().forEach((s, i) => (s.textContent = msg[i] || "?"));
+      openEmployeesModal();
+      return;
+    }
+
     if (!remaining.length) {
-      const msg = ["H", "Ế", "T", " ", "L", "I", "S", "T", "!", "!"];
+      const msg = ["H", "Ế", "T"];
       getSlots().forEach((s, i) => (s.textContent = msg[i] || "!"));
       return;
     }
@@ -250,8 +257,10 @@
 
   function loadSampleToTextarea() {
     const ta = document.getElementById("employeeInput");
-    const s = sampleEmployees();
-    if (ta) ta.value = s.map((e) => `${e.name} | ${e.code}`).join("\n");
+    // Mẫu nhanh: 001 → 050 (bạn có thể sửa thành 001 → 220, hoặc dán danh sách riêng)
+    const out = [];
+    for (let i = 1; i <= 50; i++) out.push(String(i).padStart(3, "0"));
+    if (ta) ta.value = out.join("\n");
   }
 
   // ===== Click handler =====
