@@ -63,6 +63,9 @@
   function loadAll() {
     employees = JSON.parse(localStorage.getItem(LS_EMP) || "[]");
     winners = JSON.parse(localStorage.getItem(LS_WIN) || "[]");
+
+    // Backfill round cho dữ liệu cũ (nếu trước đây chưa lưu trường round)
+    winners = winners.map((w, i) => ({ ...w, round: w.round ?? (i + 1) }));
     remaining = JSON.parse(localStorage.getItem(LS_REMAIN) || "[]");
 
     // nếu có employees nhưng remaining trống => rebuild remaining = employees - winners
@@ -113,7 +116,7 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${idx + 1}</td>
-        <td>${escapeHtml(w.name)}</td>
+        <td>${escapeHtml(`Kỳ ${w.round ?? (idx + 1)}`)}</td>
         <td>${escapeHtml(w.code)}</td>
       `;
       tbody.appendChild(tr);
@@ -206,7 +209,10 @@
 
     const idx = Math.floor(Math.random() * remaining.length);
     const winner = remaining.splice(idx, 1)[0];
-    winners.push(winner);
+
+    // lưu thêm "kỳ quay" để hiển thị ở bảng kết quả
+    const roundNo = winners.length + 1;
+    winners.push({ ...winner, round: roundNo });
 
     showWinnerOnSlots(winner);
     renderWinners();
