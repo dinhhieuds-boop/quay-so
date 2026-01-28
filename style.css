@@ -418,3 +418,50 @@ body{
   position: relative;
   z-index: 2; /* nội dung nằm trên pháo hoa */
 }
+/* =======================================================
+   FIREWORKS CANVAS FIX (chuẩn, không che chữ, phủ đúng modal)
+   ======================================================= */
+
+/* Card congrats phải là relative để canvas absolute bám theo */
+.congratsCard{
+  position: relative;
+  overflow: hidden;
+}
+
+/* Canvas pháo hoa: luôn phủ hết card, không bắt click */
+.congratsCard #fw,
+.congratsCard .fwCanvas{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+  opacity: .98;
+}
+
+/* Nội dung luôn nằm trên canvas */
+.congratsCard .modalHead,
+.congratsCard .modalBody,
+.congratsCard .modalFoot{
+  position: relative;
+  z-index: 2;
+}
+
+/* (Tuỳ chọn) Căn giữa toàn bộ nội dung popup */
+.congratsCard .modalHead{
+  justify-content: center;
+  text-align: center;
+}
+.congratsCard .modalBody{
+  text-align: center;
+}
+
+/* NẾU bạn có nút X, vẫn để nổi trên cùng */
+.congratsCard .xBtn{
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  z-index: 3;
+}
